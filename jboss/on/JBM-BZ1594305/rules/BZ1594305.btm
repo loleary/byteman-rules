@@ -1,0 +1,46 @@
+########################################################################
+# To the extent possible under law, Red Hat, Inc. has dedicated all 
+# copyright to this software to the public domain worldwide, pursuant 
+# to the CC0 Public Domain Dedication. This software is distributed 
+# without any warranty.  
+# 
+# See <http://creativecommons.org/publicdomain/zero/1.0/>.
+#
+#
+# JBM-BZ1594305 Rule File
+# 
+# This JBoss Byteman rule set may be helpful in diagnosing ARJUNA012125
+# errors related to the exception TransientPropertyValueException:
+# object references an unsaved transient instance - save the transient
+# instance before flushing:
+# org.rhq.core.domain.measurement.MeasurementSchedule.baseline ->
+# org.rhq.core.domain.measurement.MeasurementBaseline
+#
+# See Red Hat Bugzilla 1594305 <https://bugzilla.redhat.com/show_bug.cgi?id=1594305>.
+#
+# To use this rule in a JBoss ON server:
+#
+# 1.  If necessary, download and install [JBoss Byteman](http://byteman.jboss.org/downloads).
+# 2.  Set the envrionment variables `BYTEMAN_HOME`, `RHQ_SERVER_HOME`,
+#     and `BTM_PATH` to their appropriate values. 
+#
+#         BYTEMAN_HOME=/usr/share/byteman
+#         RHQ_SERVER_HOME=/opt/jboss/on/jon-server
+#         BTM_PATH=/tmp/BZ1594305.btm
+#
+# 3.  Restart the JBoss ON server using the following command-line.
+#
+#         RHQ_SERVER_ADDITIONAL_JAVA_OPTS="-javaagent:${BYTEMAN_HOME}/lib/byteman.jar=script:${BTM_PATH}" "${RHQ_SERVER_HOME}"/bin/rhqctl restart --server
+#
+
+# For each MeasurementBaselineManagerBean.saveNewBaselines call, output
+# the contents of the MeasurementBaseline Map.
+RULE   saveNewBaselines for MeasurementBaseline
+CLASS  org.rhq.enterprise.server.measurement.MeasurementBaselineManagerBean
+METHOD saveNewBaselines(Set, Map)
+AT ENTRY
+BIND   log:org.apache.commons.logging.Log = org.apache.commons.logging.LogFactory.getLog($CLASS);
+       baselines:java.util.Map = $2
+IF     TRUE
+DO     log.info("JBM-BZ1594305: " + $CLASS + "." + $METHOD + " baselines = " + baselines);
+ENDRULE
